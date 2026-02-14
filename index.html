@@ -9,8 +9,8 @@
 body {
     margin: 0;
     overflow: hidden;
-    background: radial-gradient(circle at center, #1a001f, #000000);
-    font-family: 'Georgia', serif;
+    background: radial-gradient(circle at center, #14001f 0%, #000000 70%);
+    font-family: 'Playfair Display', serif;
 }
 
 canvas {
@@ -22,24 +22,26 @@ canvas {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 50px;
-    color: #ff99cc;
+    font-size: 60px;
+    color: #ffccd5;
     opacity: 0;
     text-align: center;
-    text-shadow: 0 0 20px #ff66b2;
+    text-shadow: 0 0 30px rgba(255, 105, 180, 0.8);
     transition: opacity 3s ease;
+    letter-spacing: 3px;
 }
 
 .subtitle {
     font-size: 20px;
     margin-top: 20px;
+    opacity: 0.8;
 }
 </style>
 </head>
 
 <body>
 
-<canvas id="treeCanvas"></canvas>
+<canvas id="canvas"></canvas>
 
 <div class="love-text" id="loveText">
     I Love You ❤️
@@ -47,67 +49,80 @@ canvas {
 </div>
 
 <script>
-const canvas = document.getElementById('treeCanvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let branches = [];
-let flowers = [];
-let maxDepth = 9;
+let growth = 0;
+let bloom = 0;
 
-function drawBranch(x, y, len, angle, depth) {
-    if (depth === 0) {
-        flowers.push({x, y, size: 0});
-        return;
+function drawBackgroundParticles() {
+    for (let i = 0; i < 50; i++) {
+        ctx.fillStyle = "rgba(255,255,255,0.03)";
+        ctx.beginPath();
+        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*2, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+function drawStem() {
+    ctx.strokeStyle = "#2e8b57";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2, canvas.height);
+    ctx.quadraticCurveTo(
+        canvas.width/2 - 50,
+        canvas.height - 200,
+        canvas.width/2,
+        canvas.height - growth
+    );
+    ctx.stroke();
+}
+
+function drawFlower(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    for (let i = 0; i < 8; i++) {
+        ctx.rotate(Math.PI / 4);
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255,105,180,0.9)";
+        ctx.ellipse(0, size, size/2, size, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.fillStyle = "#ffcc00";
+    ctx.arc(0, 0, size/2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackgroundParticles();
+
+    if (growth < 350) {
+        growth += 2;
+    } else if (bloom < 40) {
+        bloom += 0.8;
     }
 
-    let x2 = x + len * Math.cos(angle);
-    let y2 = y - len * Math.sin(angle);
+    drawStem();
 
-    ctx.strokeStyle = "rgba(139,69,19,0.8)";
-    ctx.lineWidth = depth;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+    if (growth >= 350) {
+        drawFlower(canvas.width/2, canvas.height - 350, bloom);
+    }
 
-    setTimeout(() => {
-        drawBranch(x2, y2, len * 0.7, angle + 0.4, depth - 1);
-        drawBranch(x2, y2, len * 0.7, angle - 0.4, depth - 1);
-    }, 300);
+    if (bloom >= 40) {
+        document.getElementById("loveText").style.opacity = 1;
+    }
+
+    requestAnimationFrame(animate);
 }
 
-function growTree() {
-    drawBranch(canvas.width/2, canvas.height, 120, Math.PI/2, maxDepth);
-}
-
-function animateFlowers() {
-    flowers.forEach(flower => {
-        if (flower.size < 8) {
-            flower.size += 0.2;
-        }
-
-        ctx.beginPath();
-        ctx.fillStyle = "pink";
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = "#ff66b2";
-        ctx.arc(flower.x, flower.y, flower.size, 0, Math.PI*2);
-        ctx.fill();
-    });
-
-    requestAnimationFrame(animateFlowers);
-}
-
-setTimeout(() => {
-    growTree();
-}, 1000);
-
-setTimeout(() => {
-    document.getElementById("loveText").style.opacity = 1;
-}, 8000);
-
-animateFlowers();
+animate();
 </script>
 
 </body>
