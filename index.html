@@ -9,7 +9,7 @@
 body{
     margin:0;
     overflow:hidden;
-    background: radial-gradient(circle at center, #120018 0%, #000 80%);
+    background: radial-gradient(circle at center, #0f0018 0%, #000 85%);
     font-family: 'Georgia', serif;
 }
 
@@ -49,107 +49,117 @@ canvas.height = window.innerHeight;
 
 let startTime = null;
 let bloom = 0;
-let petals = [];
 let selected = null;
 
 const centerX = canvas.width/2;
 const centerY = canvas.height/2;
+const petalLength = 160;
 
 const messages = [
-`1. I'm Sorry ❤️
+"1. I'm Sorry ❤️\n\nIf I have ever hurt you, even unintentionally, please know it was never from my heart. You are too precious to me. Every mistake only teaches me how deeply I care for you and how much I want to grow with you.",
 
-If I have ever hurt you, even without meaning to, please know it was never from my heart. My heart has always been yours. Every mistake only reminds me how precious you are. I promise to grow and love you better every single day.`,
+"2. How Much I Love You ❤️\n\nMy love for you grows quietly every single day. It lives in the smallest moments, in the way I think of you without reason, in the way your smile changes everything.",
 
-`2. How Much I Love You ❤️
+"3. I Can’t Be Without You ❤️\n\nYou are my comfort and my peace. Life feels incomplete without your voice, your presence, your warmth. You have become my safe place.",
 
-My love for you isn't temporary or small. It grows quietly, deeply, endlessly. I think about you in the smallest moments. Loving you feels natural, safe, and true.`,
+"4. How Important You Are ❤️\n\nYou inspire me to be better. You support me in ways no one else can. You are not just important — you are irreplaceable.",
 
-`3. I Can't Be Without You ❤️
-
-You are part of my happiness, my comfort, my peace. Life feels different with you in it. You are not just someone in my life — you are my life’s warmth.`,
-
-`4. How Important You Are ❤️
-
-You motivate me, inspire me, and support me in ways no one else can. You matter more than words can explain. You are irreplaceable.`,
-
-`5. Why You Are The Best ❤️
-
-You are the best because you are uniquely you. Your heart, your smile, your soul — everything about you makes my world brighter.`
+"5. Why You Are The Best ❤️\n\nYou are the best because you are uniquely you. Your kindness, your soul, your smile — everything about you makes my world brighter."
 ];
 
 function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
 
-function drawPetal(x,y,angle,scale,index){
+/* ---------------- FIREWORKS ---------------- */
+
+let fireworks = [];
+
+function createFirework(){
+    let x = Math.random()*canvas.width;
+    let y = Math.random()*canvas.height/2;
+    for(let i=0;i<40;i++){
+        fireworks.push({
+            x:x,
+            y:y,
+            angle:Math.random()*Math.PI*2,
+            speed:Math.random()*3+1,
+            life:100
+        });
+    }
+}
+
+function updateFireworks(){
+    for(let i=fireworks.length-1;i>=0;i--){
+        let f=fireworks[i];
+        f.x+=Math.cos(f.angle)*f.speed;
+        f.y+=Math.sin(f.angle)*f.speed;
+        f.life--;
+
+        ctx.fillStyle=`rgba(255,150,200,${f.life/100})`;
+        ctx.fillRect(f.x,f.y,2,2);
+
+        if(f.life<=0) fireworks.splice(i,1);
+    }
+}
+
+/* ---------------- FLOWER ---------------- */
+
+function drawPetal(angle,index){
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(centerX,centerY);
     ctx.rotate(angle);
-    ctx.scale(scale,scale);
+    ctx.scale(bloom,bloom);
 
     ctx.beginPath();
     ctx.moveTo(0,0);
-    ctx.bezierCurveTo(40,-80, 80,-80, 0,-160);
+    ctx.bezierCurveTo(40,-80, 80,-80, 0,-petalLength);
     ctx.bezierCurveTo(-80,-80, -40,-80, 0,0);
     ctx.closePath();
 
     ctx.fillStyle = selected===index ? "#ff4d88" : "#ff7aa8";
-    ctx.shadowColor = "rgba(255,100,150,0.6)";
-    ctx.shadowBlur = 25;
+    ctx.shadowColor="rgba(255,100,150,0.6)";
+    ctx.shadowBlur=20;
     ctx.fill();
 
     ctx.restore();
 }
 
-function drawFlower(progress){
-    petals=[];
+function drawFlower(){
     for(let i=0;i<5;i++){
-        let angle = (Math.PI*2/5)*i;
-        let scale = progress;
-
-        drawPetal(centerX,centerY,angle,scale,i);
-        petals.push({angle,index:i});
+        let angle=(Math.PI*2/5)*i;
+        drawPetal(angle,i);
     }
 
     ctx.beginPath();
-    ctx.arc(centerX,centerY,45,0,Math.PI*2);
+    ctx.arc(centerX,centerY,45*bloom,0,Math.PI*2);
     ctx.fillStyle="#b30059";
     ctx.fill();
 }
 
-function animate(timestamp){
-    if(!startTime) startTime=timestamp;
-    let elapsed = timestamp-startTime;
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    if(bloom<1){
-        bloom = easeOut(Math.min(elapsed/3000,1));
-    }
-
-    drawFlower(bloom);
-
-    requestAnimationFrame(animate);
-}
+/* ---------------- CLICK DETECTION ---------------- */
 
 canvas.addEventListener("click",function(e){
+    if(bloom<1) return;
+
     const rect=canvas.getBoundingClientRect();
-    const mx=e.clientX-rect.left;
-    const my=e.clientY-rect.top;
+    const mx=e.clientX-rect.left-centerX;
+    const my=e.clientY-rect.top-centerY;
 
-    for(let i=0;i<petals.length;i++){
-        let dx=mx-centerX;
-        let dy=my-centerY;
-        let distance=Math.sqrt(dx*dx+dy*dy);
+    let angle=Math.atan2(my,mx);
+    if(angle<0) angle+=Math.PI*2;
 
-        if(distance<160){
-            selected=i;
-            showMessage(i);
-        }
+    let section=Math.floor(angle/(Math.PI*2/5));
+
+    let distance=Math.sqrt(mx*mx+my*my);
+
+    if(distance<petalLength*bloom && distance>40){
+        selected=section;
+        showMessage(section);
     }
 });
 
 function showMessage(i){
     const box=document.getElementById("message");
-    box.innerHTML=messages[i];
+    box.innerText=messages[i];
     box.classList.add("active");
 }
 
@@ -159,6 +169,26 @@ document.addEventListener("click",function(e){
         selected=null;
     }
 });
+
+/* ---------------- ANIMATION LOOP ---------------- */
+
+function animate(timestamp){
+    if(!startTime) startTime=timestamp;
+    let elapsed=timestamp-startTime;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    if(bloom<1){
+        bloom=easeOut(Math.min(elapsed/3000,1));
+    }
+
+    if(Math.random()<0.02) createFirework();
+    updateFireworks();
+
+    drawFlower();
+
+    requestAnimationFrame(animate);
+}
 
 requestAnimationFrame(animate);
 </script>
