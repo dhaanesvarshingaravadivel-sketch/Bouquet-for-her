@@ -9,7 +9,7 @@
 body{
     margin:0;
     overflow:hidden;
-    background: radial-gradient(circle at center, #120018 0%, #000 70%);
+    background: radial-gradient(circle at center, #100016 0%, #000 80%);
     font-family: 'Georgia', serif;
 }
 
@@ -21,15 +21,15 @@ canvas{
     position:absolute;
     top:50%;
     left:50%;
-    transform:translate(-50%,-50%) scale(0.8);
-    width:70%;
-    max-width:800px;
+    transform:translate(-50%,-50%) scale(0.9);
+    width:75%;
+    max-width:850px;
     color:#fff;
     font-size:20px;
-    line-height:1.7;
+    line-height:1.8;
     text-align:center;
     opacity:0;
-    transition: all 0.8s ease;
+    transition: opacity 1.2s ease, transform 1.2s ease;
 }
 
 .message.active{
@@ -49,102 +49,136 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let startTime = null;
+let phase = "seed";
 let petals = [];
-let bloomProgress = 0;
-let clickedPetal = null;
+let selectedPetal = null;
 
 const messages = [
 `1. I'm Sorry ❤️
 
-If I have ever hurt you, even in the smallest way, I want you to know it was never intentional. Sometimes I make mistakes, sometimes I don't express myself properly, but my heart has always been yours. You mean too much to me for me to ever hurt you on purpose. I’m sorry for every misunderstanding, every moment I wasn’t perfect. I am learning, growing, and becoming better — for you, and because of you.`,
+If I have ever hurt you, even unintentionally, I want you to know it was never from my heart. My heart has always belonged to you. Every mistake I made only taught me how precious you are. I promise to grow, to learn, and to love you better every single day.`,
 
 `2. How Much I Love You ❤️
 
-I don’t just love you in simple words. I love you in the quiet moments, in the way I think about you randomly during the day, in the way your smile changes my entire mood. My love for you is not small or temporary. It is deep, constant, and growing every single day. You are not just someone I love — you are someone I choose, again and again.`,
+My love for you is not just words. It is in my thoughts when I wake up and before I sleep. It grows silently, deeply, endlessly. You are not just someone I love — you are the reason my heart feels full.`,
 
-`3. I Can’t Be Without You ❤️
+`3. I Can't Be Without You ❤️
 
-Life before you was normal. Life with you feels meaningful. You’ve become part of my routine, my thoughts, my happiness. I can’t imagine my days without your voice, your laugh, your presence. You are not just in my life — you are my comfort, my peace, my safe place.`,
+You’ve become part of my world in a way I never expected. My happiness feels incomplete without you. You are my comfort, my calm, my everything.`,
 
 `4. How Important You Are To Me ❤️
 
-You are not just important — you are irreplaceable. You motivate me to be better, stronger, kinder. Your support means everything to me. When I succeed, I want you beside me. When I struggle, you are the only one I want to turn to. You are my biggest blessing.`,
+You are my motivation, my strength, my inspiration. When life feels heavy, your presence makes it lighter. You matter more to me than you will ever fully understand.`,
 
 `5. Why You Are The Best ❤️
 
-You are the best not because you are perfect, but because you are you. Your heart, your kindness, your personality, your little habits — everything about you feels right to me. No one compares. No one replaces you. To me, you are one in a million — and I am lucky you chose me.`
+You are the best because you are uniquely you. Your kindness, your smile, your soul — everything about you makes my world brighter. No one compares to you.`
 ];
 
-function easeOut(t){
-    return 1 - Math.pow(1 - t, 3);
+function easeOut(t){ return 1 - Math.pow(1 - t, 3); }
+
+function drawSeed(progress){
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255,150,200,${progress})`;
+    ctx.arc(canvas.width/2, canvas.height-50, 8, 0, Math.PI*2);
+    ctx.fill();
 }
 
-function drawFlower(progress){
-    const centerX = canvas.width/2;
-    const centerY = canvas.height/2;
+function drawStem(progress){
+    let height = 350 * progress;
+    ctx.strokeStyle = "#2f8f57";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2, canvas.height-50);
 
-    petals = [];
-    let radius = 150 * progress;
+    for(let i=0;i<height;i++){
+        let curve = Math.sin(i*0.01)*10;
+        ctx.lineTo(canvas.width/2 + curve, canvas.height-50 - i);
+    }
+    ctx.stroke();
+}
+
+function drawPetals(progress){
+    petals=[];
+    let centerX = canvas.width/2;
+    let centerY = canvas.height-400;
+    let baseRadius = 140*progress;
 
     for(let i=0;i<5;i++){
-        let angle = (Math.PI*2/5)*i;
-        let x = centerX + Math.cos(angle)*radius;
-        let y = centerY + Math.sin(angle)*radius;
+        let angle=(Math.PI*2/5)*i;
+        let x=centerX+Math.cos(angle)*baseRadius;
+        let y=centerY+Math.sin(angle)*baseRadius;
 
         ctx.beginPath();
-        ctx.fillStyle = clickedPetal===i ? "#ff4d88" : "#ff80aa";
-        ctx.ellipse(x,y,80,130,angle,0,Math.PI*2);
+        ctx.fillStyle= selectedPetal===i ? "#ff4d88" : "#ff80aa";
+        ctx.ellipse(x,y,70,120,angle,0,Math.PI*2);
         ctx.fill();
 
-        petals.push({x,y,angle,index:i});
+        petals.push({x,y,index:i});
     }
 
     ctx.beginPath();
     ctx.fillStyle="#b30059";
-    ctx.arc(centerX,centerY,70,0,Math.PI*2);
+    ctx.arc(centerX,centerY,60,0,Math.PI*2);
     ctx.fill();
 }
 
-function animate(){
+function animate(timestamp){
+    if(!startTime) startTime=timestamp;
+    let elapsed=timestamp-startTime;
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if(bloomProgress < 1){
-        bloomProgress += 0.01;
+    if(elapsed<1500){
+        drawSeed(elapsed/1500);
+    } 
+    else if(elapsed<5000){
+        drawSeed(1);
+        drawStem(easeOut((elapsed-1500)/3500));
+    } 
+    else{
+        drawSeed(1);
+        drawStem(1);
+        drawPetals(easeOut((elapsed-5000)/2000));
+        phase="flower";
     }
 
-    drawFlower(easeOut(bloomProgress));
     requestAnimationFrame(animate);
 }
 
-canvas.addEventListener("click", function(e){
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+canvas.addEventListener("click",(e)=>{
+    if(phase!=="flower") return;
+
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const my=e.clientY-rect.top;
 
     petals.forEach(p=>{
-        const dx = mouseX - p.x;
-        const dy = mouseY - p.y;
-        if(Math.sqrt(dx*dx+dy*dy)<100){
-            clickedPetal = p.index;
+        let dx=mx-p.x;
+        let dy=my-p.y;
+        if(Math.sqrt(dx*dx+dy*dy)<90){
+            selectedPetal=p.index;
             showMessage(p.index);
         }
     });
 });
 
 function showMessage(index){
-    const messageBox = document.getElementById("message");
-    messageBox.innerHTML = messages[index];
-    messageBox.classList.add("active");
+    const box=document.getElementById("message");
+    box.innerHTML=messages[index];
+    box.classList.add("active");
 }
 
-document.addEventListener("click", function(e){
-    if(e.target.id !== "canvas"){
+document.addEventListener("click",(e)=>{
+    if(e.target.id!=="canvas"){
         document.getElementById("message").classList.remove("active");
-        clickedPetal = null;
+        selectedPetal=null;
     }
 });
 
-animate();
+requestAnimationFrame(animate);
 </script>
 </body>
 </html>
