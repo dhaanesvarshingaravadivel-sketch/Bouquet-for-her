@@ -6,35 +6,35 @@
 <title>For My Love ❤️</title>
 
 <style>
-body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(circle at center, #14001f 0%, #000000 70%);
-    font-family: 'Playfair Display', serif;
+body{
+    margin:0;
+    overflow:hidden;
+    background: radial-gradient(circle at center, #0f0018 0%, #000 70%);
+    font-family: 'Georgia', serif;
 }
 
-canvas {
-    display: block;
+canvas{
+    display:block;
 }
 
-.love-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 60px;
-    color: #ffccd5;
-    opacity: 0;
-    text-align: center;
-    text-shadow: 0 0 30px rgba(255, 105, 180, 0.8);
-    transition: opacity 3s ease;
-    letter-spacing: 3px;
+.love-text{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:65px;
+    color:#ffd1dc;
+    opacity:0;
+    text-align:center;
+    text-shadow:0 0 40px rgba(255,100,150,0.9);
+    transition:opacity 3s ease;
+    letter-spacing:3px;
 }
 
-.subtitle {
-    font-size: 20px;
-    margin-top: 20px;
-    opacity: 0.8;
+.subtitle{
+    font-size:22px;
+    margin-top:20px;
+    opacity:0.8;
 }
 </style>
 </head>
@@ -51,78 +51,95 @@ canvas {
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let growth = 0;
-let bloom = 0;
+let startTime = null;
+let stemDuration = 4000;   // 4 seconds grow
+let bloomDuration = 3000;  // 3 seconds bloom
 
-function drawBackgroundParticles() {
-    for (let i = 0; i < 50; i++) {
-        ctx.fillStyle = "rgba(255,255,255,0.03)";
-        ctx.beginPath();
-        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*2, 0, Math.PI*2);
-        ctx.fill();
-    }
+function easeOutCubic(t){
+    return 1 - Math.pow(1 - t, 3);
 }
 
-function drawStem() {
-    ctx.strokeStyle = "#2e8b57";
-    ctx.lineWidth = 6;
+function drawStem(progress){
+    let maxHeight = 400;
+    let height = maxHeight * progress;
+
+    ctx.strokeStyle = "#2f8f57";
+    ctx.lineWidth = 5;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(canvas.width/2, canvas.height);
-    ctx.quadraticCurveTo(
-        canvas.width/2 - 50,
-        canvas.height - 200,
-        canvas.width/2,
-        canvas.height - growth
-    );
+
+    let baseX = canvas.width/2;
+    let baseY = canvas.height;
+
+    ctx.moveTo(baseX, baseY);
+
+    for(let i=0;i<height;i++){
+        let curve = Math.sin(i * 0.01) * 15;
+        ctx.lineTo(baseX + curve, baseY - i);
+    }
+
     ctx.stroke();
 }
 
-function drawFlower(x, y, size) {
+function drawRose(progress){
+    let centerX = canvas.width/2;
+    let centerY = canvas.height - 400;
+
+    let maxRadius = 60;
+    let radius = maxRadius * progress;
+
     ctx.save();
-    ctx.translate(x, y);
-    for (let i = 0; i < 8; i++) {
-        ctx.rotate(Math.PI / 4);
+    ctx.translate(centerX, centerY);
+
+    for(let i=0;i<20;i++){
+        ctx.rotate(Math.PI/10);
         ctx.beginPath();
-        ctx.fillStyle = "rgba(255,105,180,0.9)";
-        ctx.ellipse(0, size, size/2, size, 0, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(220,20,60,${0.6 + progress*0.4})`;
+        ctx.ellipse(0, radius/2, radius/2.5, radius, 0, 0, Math.PI*2);
         ctx.fill();
     }
+
     ctx.beginPath();
-    ctx.fillStyle = "#ffcc00";
-    ctx.arc(0, 0, size/2, 0, Math.PI*2);
+    ctx.fillStyle = "#8b0000";
+    ctx.arc(0,0,radius/2,0,Math.PI*2);
     ctx.fill();
+
     ctx.restore();
 }
 
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBackgroundParticles();
+function animate(timestamp){
+    if(!startTime) startTime = timestamp;
+    let elapsed = timestamp - startTime;
 
-    if (growth < 350) {
-        growth += 2;
-    } else if (bloom < 40) {
-        bloom += 0.8;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // subtle glowing background
+    ctx.fillStyle = "rgba(255,255,255,0.02)";
+    for(let i=0;i<30;i++){
+        ctx.beginPath();
+        ctx.arc(Math.random()*canvas.width,Math.random()*canvas.height,1,0,Math.PI*2);
+        ctx.fill();
     }
 
-    drawStem();
+    let stemProgress = Math.min(elapsed / stemDuration, 1);
+    drawStem(easeOutCubic(stemProgress));
 
-    if (growth >= 350) {
-        drawFlower(canvas.width/2, canvas.height - 350, bloom);
-    }
+    if(elapsed > stemDuration){
+        let bloomProgress = Math.min((elapsed - stemDuration)/bloomDuration,1);
+        drawRose(easeOutCubic(bloomProgress));
 
-    if (bloom >= 40) {
-        document.getElementById("loveText").style.opacity = 1;
+        if(bloomProgress === 1){
+            document.getElementById("loveText").style.opacity = 1;
+        }
     }
 
     requestAnimationFrame(animate);
 }
 
-animate();
+requestAnimationFrame(animate);
 </script>
 
 </body>
